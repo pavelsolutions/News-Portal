@@ -1,145 +1,282 @@
-# Bangla News 24
+# 📰 Bangla News 24
 
-A Bengali-language news portal built with Next.js 16 (App Router), React 19, Tailwind CSS v4, HeroUI v3, and better-auth backed by MongoDB.
+### সত্য ও বস্তুনিষ্ঠ সংবাদ · *Truthful and objective news*
 
-All news content is sourced from an external read-only API (`https://news-api-v2.vercel.app/api/*`); the app has no local news database. Accounts, sessions, and profile data are stored in MongoDB through better-auth.
+A modern, **Bengali-first** news portal built with **Next.js 16**, **React 19**, **Tailwind CSS v4**, **HeroUI v3**, and **better-auth** on **MongoDB**.
 
-## Features
+All news content is pulled from an external, read-only API — there is no local news database. Accounts, sessions, and profile data live in MongoDB via better-auth.
 
-- **Home page** — a featured hero story, a "latest" rail, a most-read section, and curated category sections.
-- **Category listings** — `/category/[slug]` pages with a featured lead story on page 1, a card grid, and pagination.
-- **Article pages** — full rich-text body (text, images, subheadings), byline, reading time, source link, tags, share buttons, and related articles.
-- **Search** — a searchable corpus built from the latest feed plus the first pages of every scrapable category, with a live suggestion dropdown (`/api/suggest`) and a paginated results page.
-- **Breaking news ticker** — a scrolling marquee of the latest headlines.
-- **Authentication** — email/password plus Google and GitHub OAuth via better-auth, with a guarded profile page.
-- **Bengali-first UI** — SolaimanLipi body font, Bengali (`bn-BD`) date formatting, and Bengali numerals throughout.
-- **Bengali ⇄ English translation** — a header toggle backed by Google's website translator, persisted in a cookie.
+<p align="center">
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white" />
+  <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
+  <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind_CSS-4-38BDF8?logo=tailwindcss&logoColor=white" />
+  <img alt="HeroUI" src="https://img.shields.io/badge/HeroUI-3-000000?logo=react&logoColor=white" />
+  <img alt="better-auth" src="https://img.shields.io/badge/better--auth-1.7-7C3AED" />
+  <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-7-47A248?logo=mongodb&logoColor=white" />
+  <img alt="License" src="https://img.shields.io/badge/license-private-lightgrey" />
+</p>
 
-## Tech stack
+---
+
+## 📑 Table of contents
+
+- [✨ Features at a glance](#-features-at-a-glance)
+- [🧩 Functionality in detail](#-functionality-in-detail)
+- [🛠 Tech stack](#-tech-stack)
+- [🚀 Getting started](#-getting-started)
+- [🔑 Environment variables](#-environment-variables)
+- [📜 Scripts](#-scripts)
+- [🗂 Project structure](#-project-structure)
+- [🧭 Routes](#-routes)
+- [⚙️ How it works](#️-how-it-works)
+- [☁️ Deployment](#️-deployment)
+
+---
+
+## ✨ Features at a glance
+
+| | Feature | Summary |
+| :-: | --- | --- |
+| 🏠 | **Home page** | Featured hero story, latest rail, most-read, and curated category sections |
+| 🗂 | **Category listings** | `/category/[slug]` with a featured lead, card grid, and pagination |
+| 📄 | **Article pages** | Rich-text body, byline, reading time, source, tags, share, related news |
+| 🔎 | **Search** | Deep server-side corpus, live suggestions, and paginated results |
+| 🚨 | **Breaking ticker** | Auto-scrolling marquee of the latest headlines |
+| 🔐 | **Authentication** | Email/password + Google + GitHub OAuth, guarded profile |
+| 🇧🇩 | **Bengali-first UI** | SolaimanLipi font, `bn-BD` dates, Bengali numerals |
+| 🌐 | **Translate toggle** | One-click Bengali ⇄ English via Google Translate, cookie-persisted |
+
+---
+
+## 🧩 Functionality in detail
+
+### 🏠 Home page (`/`)
+
+Composed from four server-rendered sections in `src/components/homepage/`:
+
+- **Hero / Main news** — the lead story, visually dominant in a two-column grid.
+- **Latest rail** — a vertical list of the freshest headlines beside the hero.
+- **Most read** — the portal's most-read stories, fetched from the most-read endpoint.
+- **Selected sections** — curated blocks driven by `/api/news/sections`.
+
+### 🗂 Category listings (`/category/[slug]`)
+
+- Page 1 leads with a **featured story** (full-width card) followed by a grid; deeper pages render a pure grid.
+- **Pagination** is validated (`?page=`) and clamped: the category API caps out at 24 items per page and 40 pages, so `hasMore` is verified by peeking at the start of the next page.
+- An empty first page means the category doesn't exist → `notFound()`.
+
+### 📄 Article pages (`/article/[id]`)
+
+- Renders a heterogeneous **rich-text body**: paragraphs, images, and subheadings.
+- Handles BBC-style **rich-text objects** (`{ blocks: [...] }`) by flattening them to plain text.
+- **De-duplicates the lead image** — the API returns the hero twice (as `imageUrl` and as the first body image), so the two are normalized and compared to avoid showing it twice.
+- Shows byline/author avatar, **Bengali-formatted date**, **estimated reading time** (words ÷ 200), a source link, tags, **share buttons**, and **related articles**.
+- Generates dynamic **Open Graph + SEO metadata** per article.
+
+### 🔎 Search
+
+- **Search pool** (`src/lib/news-pool.ts`) — because `/api/news` only exposes ~45 articles, the searchable corpus is built from the latest feed **plus the first two pages of every scrapable category** (~340 articles), deduped by id, sorted newest-first, and **memoized per process for 5 minutes** with in-flight request sharing.
+- **Matching** (`src/lib/search.ts`) — case-insensitive substring match on title + description, mirroring the API's own `q` semantics.
+- **Live suggestions** — `/api/suggest?q=` returns up to 5 trimmed suggestions for the navbar dropdown. Runs server-side because the news API sends no CORS headers.
+- **Results page** (`/search?q=`) — paginated grid with result counts in Bengali numerals; out-of-range pages clamp to the last page.
+
+### 🚨 Breaking news ticker
+
+A red, full-width marquee of the latest headlines (`src/components/shared/BreakingNews.tsx`). The track auto-scrolls via a CSS keyframe animation and **pauses on hover**. Renders nothing when there are no headlines.
+
+### 🔐 Authentication
+
+- **Providers:** email/password, Google, and GitHub — configured in `src/lib/auth.ts`.
+- **Client:** `src/lib/auth-client.ts` exposes `signIn`, `signUp`, `signOut`, `updateUser`, and `useSession`.
+- **Guarding:** `src/proxy.ts` (Next.js 16's renamed middleware) redirects unauthenticated users away from `/profile`; the profile pages also self-guard with `redirect("/sign-in")`.
+- **Profile:** an authenticated view plus an update form; friendly, Bengali error messages via `src/lib/auth-error.ts`.
+
+### 🇧🇩 Bengali-first experience
+
+- **Body font** — SolaimanLipi (`public/fonts/SolaimanLipi.ttf`), declared in `globals.css`.
+- **Numerals** — `toBnDigits()` converts `0-9` → `০-৯` everywhere numbers appear.
+- **Dates** — `formatBnDate()` renders `bn-BD` long dates, guaranteeing Bengali numerals.
+
+### 🌐 Bengali ⇄ English translation
+
+A header toggle (`src/components/shared/TranslateButton.tsx`) that flips the whole page between Bengali and English using Google's website translator. The choice is stored in the `googtrans` cookie so it survives navigation and reloads, and the injected widget chrome is hidden via CSS.
+
+---
+
+## 🛠 Tech stack
 
 | Layer | Choice |
 | --- | --- |
-| Framework | Next.js 16 (App Router, Turbopack) |
-| UI | React 19, HeroUI v3, Tailwind CSS v4 |
-| Auth | better-auth (MongoDB adapter) |
-| Database | MongoDB |
-| Language | TypeScript |
-| Lint | ESLint (flat config) |
-| News data | `news-api-v2.vercel.app` (external, read-only) |
+| **Framework** | Next.js 16 — App Router, Turbopack |
+| **UI** | React 19, HeroUI v3, Tailwind CSS v4 |
+| **Auth** | better-auth (MongoDB adapter) |
+| **Database** | MongoDB |
+| **Language** | TypeScript |
+| **Lint** | ESLint (flat config) |
+| **News data** | `https://news-api-v2.vercel.app` (external, read-only) |
 
-## Getting started
+---
+
+## 🚀 Getting started
 
 ### Prerequisites
 
-- Node.js 20+
-- A MongoDB connection string (local or Atlas)
-- Google and GitHub OAuth apps (optional, only needed for social sign-in)
+- **Node.js** 20+
+- A **MongoDB** connection string (local or Atlas)
+- **Google** and **GitHub** OAuth apps *(optional — only for social sign-in)*
 
-### Install
+### 1. Install
 
 ```bash
 npm install
 ```
 
-### Configure environment
+### 2. Configure environment
 
-Create a `.env` file in the project root. It is gitignored — do not commit it.
+Create a `.env` file in the project root (it's gitignored — **do not commit it**). See [Environment variables](#-environment-variables).
+
+### 3. Run the dev server
+
+```bash
+npm run dev
+```
+
+Open **[http://localhost:3000](http://localhost:3000)**. 🎉
+
+---
+
+## 🔑 Environment variables
+
+| Variable | Required | Purpose |
+| --- | :---: | --- |
+| `BETTER_AUTH_SECRET` | ✅ | Signing secret for better-auth |
+| `BETTER_AUTH_URL` | ✅ | Base URL (also used to build article share links) |
+| `BETTER_AUTH_MD_URI` | ✅ | MongoDB connection string — note the **`MD`** spelling |
+| `GOOGLE_CLIENT_ID` | ⬜ | Google OAuth client id |
+| `GOOGLE_CLIENT_SECRET` | ⬜ | Google OAuth client secret |
+| `GITHUB_CLIENT_ID` | ⬜ | GitHub OAuth client id |
+| `GITHUB_CLIENT_SECRET` | ⬜ | GitHub OAuth client secret |
 
 ```dotenv
 BETTER_AUTH_SECRET=your_auth_secret
 BETTER_AUTH_URL=http://localhost:3000
-BETTER_AUTH_MD_URI=mongodb://localhost:27017   # note the "MD" spelling
+BETTER_AUTH_MD_URI=mongodb://localhost:27017
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
 ```
 
-`src/lib/auth.ts` throws at import time if `BETTER_AUTH_MD_URI` is missing, and hardcodes the database name `better-auth`.
+> ⚠️ `src/lib/auth.ts` **throws at import time** if `BETTER_AUTH_MD_URI` is missing, and hardcodes the database name `better-auth`.
 
-### Run
+---
 
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-## Scripts
+## 📜 Scripts
 
 | Command | Description |
 | --- | --- |
 | `npm run dev` | Start the dev server on port 3000 |
-| `npm run build` | Production build |
+| `npm run build` | Create a production build |
 | `npm run start` | Serve the production build |
 | `npm run lint` | Run ESLint |
 | `npx tsc --noEmit` | Typecheck (no dedicated script) |
 
-There is no test runner or test suite.
+> ℹ️ There is **no test runner or test suite** in this project.
 
-## Project structure
+---
+
+## 🗂 Project structure
 
 ```
 src/
 ├── app/                      # App Router pages
-│   ├── (auth)/               # sign-in, sign-up, profile (route group)
+│   ├── (auth)/               # sign-in, sign-up, profile  (route group)
 │   ├── api/
 │   │   ├── auth/[...all]/    # better-auth handler
 │   │   └── suggest/          # live search suggestions
 │   ├── article/[id]/         # article page + body, share, related
-│   ├── category/[categoryId] # category listing (slug)
+│   ├── category/[categoryId] # category listing (by slug)
 │   ├── search/               # search results
 │   ├── profiledata/          # authenticated profile page
 │   ├── layout.tsx            # header, navbar, ticker, footer
-│   ├── not-found.tsx         # 404
+│   ├── not-found.tsx         # 404 (৪০৪)
 │   └── <section>/            # placeholder section routes
 ├── components/
-│   ├── homepage/             # home sections (hero, latest, most-read, ...)
-│   ├── shared/               # header, navbar, footer, cards, ticker, ...
+│   ├── homepage/             # hero, latest, most-read, sections
+│   ├── shared/               # header, navbar, footer, cards, ticker
 │   ├── profile/              # profile view + update form
 │   ├── search/               # search input
-│   └── auth/                 # auth shell/layout
+│   └── auth/                 # auth shell / layout
 ├── lib/                      # news API, search pool, auth, Bengali helpers
-├── types/news.ts             # all news/API types
+├── types/news.ts             # all news / API types
 └── proxy.ts                  # auth middleware (Next 16 convention)
 ```
 
-## Routes
+---
 
-| Route | Purpose |
-| --- | --- |
-| `/` | Home page |
-| `/category/[slug]` | Category listing (e.g. `/category/politics`) |
-| `/article/[id]` | Article page |
-| `/search?q=...` | Search results |
-| `/sign-in`, `/sign-up` | Authentication |
-| `/profile` | Profile (auth-guarded) |
-| `/profiledata` | Profile (auth-guarded) |
-| `/api/suggest?q=...` | JSON search suggestions |
-| `/api/auth/[...all]` | better-auth endpoint |
+## 🧭 Routes
 
-> The top-level routes `/politics`, `/sports`, `/world`, `/country`, `/technology`, `/health`, and `/economics` are placeholders; live listings live under `/category/[slug]`.
+| Route | Type | Purpose |
+| --- | :---: | --- |
+| `/` | Page | Home page |
+| `/category/[slug]` | Page | Category listing (e.g. `/category/politics`) |
+| `/article/[id]` | Page | Article detail |
+| `/search?q=...` | Page | Search results |
+| `/sign-in` · `/sign-up` | Page | Authentication |
+| `/profile` | Page 🔒 | Profile (auth-guarded) |
+| `/profiledata` | Page 🔒 | Profile (auth-guarded) |
+| `/api/suggest?q=...` | API | JSON search suggestions |
+| `/api/auth/[...all]` | API | better-auth endpoint |
 
-## How it works
+> 📝 The top-level routes `/politics`, `/sports`, `/world`, `/country`, `/technology`, `/health`, and `/economics` are **placeholders**; live listings live under `/category/[slug]`.
 
-### News data
+---
 
-News is fetched inline in server components with `next: { revalidate: 3600 }`. Endpoints in use: `/api/news`, `/api/news/sections`, `/api/news/most-read`, `/api/categories`, `/api/category/:slug`, and `/api/article/:id`. Responses are wrapped as `{ data: ... }`. All fetch helpers live in `src/lib/news.ts`.
+## ⚙️ How it works
 
-Because the API sends no CORS headers, the browser can't query it directly — search runs server-side.
+### 📡 News data
 
-### Search
+News is fetched inline in server components with `next: { revalidate: 3600 }` (ISR-style, one-hour cache). Endpoints in use:
 
-`/api/news` only exposes ~45 articles, so search would miss anything older. `src/lib/news-pool.ts` instead builds a corpus from the latest feed plus the first two pages of every scrapable category, dedupes it by id, sorts newest-first, and memoizes it per process for 5 minutes. Matching (`src/lib/search.ts`) is a case-insensitive substring test against title and description.
+```
+/api/news · /api/news/sections · /api/news/most-read
+/api/categories · /api/category/:slug · /api/article/:id
+```
 
-### Auth
+Every response is wrapped as `{ data: ... }`, and all fetch helpers live in `src/lib/news.ts`. Because the API sends **no CORS headers**, the browser can't call it directly — search runs server-side.
 
-- Server config: `src/lib/auth.ts` (email/password + Google + GitHub, MongoDB adapter).
-- Client config: `src/lib/auth-client.ts`.
-- Middleware: `src/proxy.ts` — Next.js 16 renamed `middleware.ts` to `proxy.ts`, and it exports `proxy` (not `middleware`). Its matcher currently guards `/profile`.
+### 🔎 The search corpus
 
-## Deployment
+`/api/news` only reveals ~45 articles, so a naive search would miss anything older. Instead:
 
-Deploy on Vercel or any Node host. Set all environment variables from the section above in the deployment environment, and make sure the OAuth callback URLs point at the deployed `BETTER_AUTH_URL`.
+1. Fetch the latest feed + the first **2 pages** of every **scrapable** category.
+2. Merge and **dedupe by id** (stories appear in multiple categories).
+3. **Sort newest-first** by publish date.
+4. **Memoize** the result per process for 5 minutes, sharing one build across concurrent requests.
 
-`next/image` remote hosts are allowlisted in `next.config.ts` — only `ichef.bbci.co.uk` is permitted today. Add a `remotePatterns` entry when introducing image URLs from other hosts.
+Tuning knobs (`CATEGORY_PAGES`, `PAGE_SIZE`, `CATEGORY_MAX_LIMIT`, `CATEGORY_MAX_PAGE`) live in `src/lib/news-pool.ts` and `src/lib/news.ts`.
+
+### 🔐 Auth flow
+
+```
+better-auth (server)  →  src/lib/auth.ts
+better-auth (client)  →  src/lib/auth-client.ts
+middleware guard      →  src/proxy.ts   ← Next 16 renamed middleware.ts → proxy.ts
+```
+
+`proxy.ts` exports **`proxy`** (not `middleware`) plus a `config.matcher`; its matcher currently guards `/profile`.
+
+---
+
+## ☁️ Deployment
+
+1. Push to your Git host and import the repo on **Vercel** (or any Node host).
+2. Set **all** environment variables in the deployment environment.
+3. Point OAuth callback URLs at the deployed `BETTER_AUTH_URL`.
+
+> ⚠️ `next/image` remote hosts are allowlisted in `next.config.ts` — only **`ichef.bbci.co.uk`** is permitted today. Add a `remotePatterns` entry before introducing image URLs from other hosts, or images will throw at runtime.
+
+---
+
+<p align="center"><sub>Built with ❤️ for Bangla readers · <b>Bangla News 24</b></sub></p>
