@@ -19,10 +19,23 @@ All news content is pulled from an external, read-only API — there is no local
 
 ---
 
+## 🖼 Preview
+
+> Replace these placeholders with real captures in `docs/screenshots/` to show off the portal.
+
+| 🏠 Home | 📄 Article | 🔎 Search |
+| :---: | :---: | :---: |
+| ![Home page](docs/screenshots/home.png) | ![Article page](docs/screenshots/article.png) | ![Search page](docs/screenshots/search.png) |
+
+---
+
 ## 📑 Table of contents
 
+- [🖼 Preview](#-preview)
 - [✨ Features at a glance](#-features-at-a-glance)
+- [🗺 How a reader moves through the app](#-how-a-reader-moves-through-the-app)
 - [🧩 Functionality in detail](#-functionality-in-detail)
+- [🧱 Feature → code map](#-feature--code-map)
 - [🛠 Tech stack](#-tech-stack)
 - [🚀 Getting started](#-getting-started)
 - [🔑 Environment variables](#-environment-variables)
@@ -30,6 +43,7 @@ All news content is pulled from an external, read-only API — there is no local
 - [🗂 Project structure](#-project-structure)
 - [🧭 Routes](#-routes)
 - [⚙️ How it works](#️-how-it-works)
+- [🩹 Troubleshooting](#-troubleshooting)
 - [☁️ Deployment](#️-deployment)
 
 ---
@@ -46,6 +60,30 @@ All news content is pulled from an external, read-only API — there is no local
 | 🔐 | **Authentication** | Email/password + Google + GitHub OAuth, guarded profile |
 | 🇧🇩 | **Bengali-first UI** | SolaimanLipi font, `bn-BD` dates, Bengali numerals |
 | 🌐 | **Translate toggle** | One-click Bengali ⇄ English via Google Translate, cookie-persisted |
+
+---
+
+## 🗺 How a reader moves through the app
+
+```mermaid
+flowchart TD
+    A([👤 Visitor lands on /]) --> B{Has a session?}
+    B -- No --> C[🔐 Sign in / Sign up<br/>email · Google · GitHub]
+    B -- Yes --> D[👤 Profile]
+    C --> D
+    D --> E([🏠 Browse home sections])
+    A --> E
+    E --> F[🗂 Open a category<br/>/category/slug]
+    E --> G[🔎 Search or pick a suggestion]
+    F --> H[📄 Read an article<br/>/article/id]
+    G --> H
+    H --> I[🔗 Share · Related news · Tags]
+    H -. Bengali ⇄ English .-> J[🌐 Translate toggle]
+```
+
+- **Public** browsing (home, categories, articles, search) needs no account.
+- **Private** routes (`/profile`, `/profiledata`) redirect to `/sign-in` when there's no session.
+- The **translate toggle** in the header works on any page and persists via cookie.
 
 ---
 
@@ -101,6 +139,25 @@ A red, full-width marquee of the latest headlines (`src/components/shared/Breaki
 ### 🌐 Bengali ⇄ English translation
 
 A header toggle (`src/components/shared/TranslateButton.tsx`) that flips the whole page between Bengali and English using Google's website translator. The choice is stored in the `googtrans` cookie so it survives navigation and reloads, and the injected widget chrome is hidden via CSS.
+
+---
+
+## 🧱 Feature → code map
+
+Jump straight to the code behind each feature.
+
+| Feature | Key files |
+| --- | --- |
+| **Layout shell** (header, navbar, ticker, footer) | `src/app/layout.tsx`, `src/components/shared/{Header,Navbar,Footer,BreakingNews}.tsx` |
+| **Home sections** | `src/components/homepage/{HomePage,MainNews,RelatedNews,MostReadingNews,SelectedNews}.tsx` |
+| **Category listing** | `src/app/category/[categoryId]/page.tsx` |
+| **Article detail** | `src/app/article/[id]/{page,ArticleBody,ShareButtons,RelatedArticles}.tsx` |
+| **Search + suggestions** | `src/app/search/page.tsx`, `src/app/api/suggest/route.ts`, `src/lib/{news-pool,search}.ts` |
+| **News API layer** | `src/lib/news.ts`, `src/types/news.ts` |
+| **Auth (server / client / guard)** | `src/lib/auth.ts`, `src/lib/auth-client.ts`, `src/proxy.ts`, `src/components/auth/AuthShell.tsx` |
+| **Profile** | `src/app/(auth)/profile/page.tsx`, `src/app/profiledata/page.tsx`, `src/components/profile/*` |
+| **Bengali helpers** | `src/lib/bn.ts` |
+| **Global styles / fonts** | `src/app/globals.css` |
 
 ---
 
@@ -266,6 +323,19 @@ middleware guard      →  src/proxy.ts   ← Next 16 renamed middleware.ts → 
 ```
 
 `proxy.ts` exports **`proxy`** (not `middleware`) plus a `config.matcher`; its matcher currently guards `/profile`.
+
+---
+
+## 🩹 Troubleshooting
+
+| Symptom | Likely cause & fix |
+| --- | --- |
+| `BETTER_AUTH_MD_URI is not defined` at startup | The env var is missing/misspelled. It's **`MD`**, not `MONGODB`. |
+| Images throw at runtime | The image host isn't allowlisted. Add a `remotePatterns` entry in `next.config.ts`. |
+| Profile keeps redirecting to sign-in | No active session — sign in first, and confirm `BETTER_AUTH_URL` matches the origin you're browsing. |
+| OAuth login fails | Callback URL mismatch — register `{BETTER_AUTH_URL}/api/auth/callback/{provider}` in the provider's console. |
+| Search misses older stories | The pool only reaches the first `CATEGORY_PAGES` pages per category — raise it in `src/lib/news-pool.ts` (costs more API calls). |
+| Auth middleware seems missing | It lives in `src/proxy.ts`, not `middleware.ts` (Next.js 16 convention). |
 
 ---
 
