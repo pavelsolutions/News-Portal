@@ -1,86 +1,44 @@
-import Link from 'next/link';
-import React from 'react';
+import { getCategories } from "@/lib/news";
+import Link from "next/link";
+import NavbarSearch from "./NavbarSearch";
 
-const Navbar = () => {
-    return (
-        <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white">
-            <div className="mx-auto flex h-10 max-w-5xl items-center justify-center">
-                <ul className="flex items-center gap-5">
-                    <li>
-                        <Link
-                            href="/"
-                            className="text-[12px] font-medium text-red-600 transition-colors"
-                        >
-                            হোম
-                        </Link>
-                    </li>
+const Navbar = async () => {
+  const categoryAll = await getCategories();
 
-                    <li>
-                        <Link
-                            href="/politics"
-                            className="text-[12px] font-medium text-gray-700 transition-colors hover:text-red-600"
-                        >
-                            রাজনীতি
-                        </Link>
-                    </li>
+  const categories = categoryAll.filter((category) => category.scrapable);
 
-                    <li>
-                        <Link
-                            href="world"
-                            className="text-[12px] font-medium text-gray-700 transition-colors hover:text-red-600"
-                        >
-                            বিশ্ব
-                        </Link>
-                    </li>
+  return (
+    <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 backdrop-blur">
+      <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 sm:px-6">
+        <ul className="no-scrollbar flex flex-1 items-center gap-1 overflow-x-auto">
+          {/* Home */}
+          <li>
+            <Link
+              href="/"
+              className="inline-block whitespace-nowrap rounded-md px-3 py-3 text-sm font-bold text-gray-900 transition hover:bg-red-50 hover:text-red-600"
+            >
+              হোম
+            </Link>
+          </li>
 
-                    <li>
-                        <Link
-                            href="/economics"
-                            className="text-[12px] font-medium text-gray-700 transition-colors hover:text-red-600"
-                        >
-                            অর্থনীতি
-                        </Link>
-                    </li>
+          {/* Categories */}
+          {categories.map((category) => (
+            <li key={category.slug}>
+              <Link
+                href={`/category/${category.slug}`}
+                className="inline-block whitespace-nowrap rounded-md px-3 py-3 text-sm font-bold text-gray-900 transition hover:bg-red-50 hover:text-red-600"
+              >
+                {category.title}
+              </Link>
+            </li>
+          ))}
+        </ul>
 
-                    <li>
-                        <Link
-                            href="/health"
-                            className="text-[12px] font-medium text-gray-700 transition-colors hover:text-red-600"
-                        >
-                            স্বাস্থ্য
-                        </Link>
-                    </li>
-
-                    <li>
-                        <Link
-                            href="/sports"
-                            className="text-[12px] font-medium text-gray-700 transition-colors hover:text-red-600"
-                        >
-                            খেলা
-                        </Link>
-                    </li>
-
-                    <li>
-                        <Link
-                            href="/technology"
-                            className="text-[12px] font-medium text-gray-700 transition-colors hover:text-red-600"
-                        >
-                            প্রযুক্তি
-                        </Link>
-                    </li>
-
-                    <li>
-                        <Link
-                            href="/Country"
-                            className="text-[12px] font-medium text-gray-700 transition-colors hover:text-red-600"
-                        >
-                            দেশ
-                        </Link>
-                    </li>
-                </ul>
-            </div>
-        </nav>
-    );
+        {/* Search */}
+        <NavbarSearch />
+      </div>
+    </nav>
+  );
 };
 
 export default Navbar;

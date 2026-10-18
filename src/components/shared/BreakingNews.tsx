@@ -1,56 +1,65 @@
-import React from 'react';
+import { INews } from "@/types/news";
+import Link from "next/link";
 
-const BreakingNews = () => {
-    return (
-        <section className="w-full overflow-hidden bg-red-700">
-            <div className="mx-auto flex h-9 max-w-7xl items-center">
-
-                {/* Breaking News */}
-                <div className="z-10 flex h-full shrink-0 items-center bg-red-800 px-5">
-                    <span className="text-xs font-semibold text-white">
-                        সর্বশেষ
-                    </span>
-                </div>
-
-                {/* News Ticker */}
-                <div className="flex-1 overflow-hidden">
-                    <div className="flex w-max animate-[ticker_30s_linear_infinite] whitespace-nowrap items-center">
-
-                        <span className="px-4 text-xs text-white">
-                            এইচপিতে বিনোদন জগতে নতুন খবর
-                        </span>
-
-                        <span className="text-white">•</span>
-
-                        <span className="px-4 text-xs text-white">
-                            বিনোদনের কোন ঘটনায় গ্রেফতার আতঙ্কে?
-                        </span>
-
-                        <span className="text-white">•</span>
-
-                        <span className="px-4 text-xs text-white">
-                            বাংলাদেশের ক্রীড়ায় ও কেন কোরিয়ান সংস্কৃতি এত জনপ্রিয় হয়ে উঠলো?
-                        </span>
-
-                        <span className="text-white">•</span>
-
-                        <span className="px-4 text-xs text-white">
-                            মুসলিম যে নারীর হাত ধরে বিশ্বের প্রাচীনতম বিশ্ববিদ্যালয় গড়ে উঠেছিল
-                        </span>
-
-                        <span className="text-white">•</span>
-
-                        <span className="px-4 text-xs text-white">
-                            সাংবাদিক বৈঠকে নতুন তথ্য প্রকাশ
-                        </span>
-
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
+export const getBreakingNews = async (): Promise<INews[]> => {
+  try {
+    const response = await fetch(
+      "https://news-api-v2.vercel.app/api/news",
+      {
+        next: {
+          revalidate: 3600,
+        },
+      }
     );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch news");
+    }
+
+    const result = await response.json();
+
+    return result.data;
+  } catch (error) {
+    console.error("Error fetching news:", error);
+    return [];
+  }
+};
+
+const BreakingNews = async () => {
+  const mainNews = await getBreakingNews();
+
+  if (mainNews.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="w-full overflow-hidden bg-red-700">
+      <div className="mx-auto flex h-10 max-w-7xl items-center px-4 sm:px-6">
+        {/* Label */}
+        <div className="z-10 mr-4 flex shrink-0 items-center gap-2 rounded-full bg-white/15 px-3 py-1">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+          <span className="text-xs font-bold text-white">সর্বশেষ</span>
+        </div>
+
+        {/* Ticker Area */}
+        <div className="flex-1 overflow-hidden">
+          <div className="breaking-track flex w-max items-center whitespace-nowrap">
+            {mainNews.map((news) => (
+              <Link
+                key={news.id}
+                href={`/article/${news.id}`}
+                className="flex items-center transition hover:opacity-80"
+              >
+                <span className="px-4 text-sm text-white">{news.title}</span>
+
+                <span className="text-sm text-white/50">•</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 };
 
 export default BreakingNews;

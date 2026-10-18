@@ -1,4 +1,16 @@
 @import "tailwindcss";
+@import "@heroui/styles"; 
+/* ================================
+   SolaimanLipi Font
+================================ */
+
+@font-face {
+  font-family: "SolaimanLipi";
+  src: url("/fonts/SolaimanLipi.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   --background: #ffffff;
@@ -8,29 +20,82 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+  --shadow-card-hover: 0 10px 25px -5px rgba(16, 24, 40, 0.1), 0 8px 10px -6px rgba(16, 24, 40, 0.06);
 }
 
 body {
+  margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "SolaimanLipi", sans-serif;
 }
 
-@keyframes ticker {
+/* ================================
+   Breaking News
+================================ */
+
+@keyframes breaking-news {
   from {
-    transform: translateX(100%);
+    transform: translateX(0);
   }
 
   to {
-    transform: translateX(-100%);
+    transform: translateX(-50%);
   }
+}
+
+.breaking-track {
+  animation: breaking-news 80s linear infinite;
+}
+
+.breaking-track:hover {
+  animation-play-state: paused;
+}
+
+/* ================================
+   Utilities
+================================ */
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ================================
+   Google Translate
+   Hide the widget chrome Google injects so it cannot
+   push the page down or restyle our markup.
+=============================== */
+
+/* The widget surface itself (kept in the DOM, moved off-screen) */
+#google_translate_element {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+}
+
+/* Top banner frame + tooltips */
+.goog-te-banner-frame,
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.skiptranslate > iframe {
+  display: none !important;
+}
+
+/* Google nudges <body> down by 40px to clear its banner */
+body {
+  top: 0 !important;
+}
+
+/* Highlight boxes around translated text */
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
 }
