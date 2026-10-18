@@ -21,11 +21,13 @@ All news content is pulled from an external, read-only API — there is no local
 
 ## 🖼 Preview
 
-> Replace these placeholders with real captures in `docs/screenshots/` to show off the portal.
+> 📸 **Screenshots coming soon.** See [`docs/screenshots/`](docs/screenshots/README.md) for a capture guide — add `home.png`, `article.png`, and `search.png`, then uncomment the grid below.
 
+<!-- Uncomment once the images exist:
 | 🏠 Home | 📄 Article | 🔎 Search |
 | :---: | :---: | :---: |
 | ![Home page](docs/screenshots/home.png) | ![Article page](docs/screenshots/article.png) | ![Search page](docs/screenshots/search.png) |
+-->
 
 ---
 
